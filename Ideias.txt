@@ -1,0 +1,8 @@
+#BLUETOOTH 
+- BLE permanece desligado.
+- Acionar alarme - Liga Bluetooth.
+- Faz uma varredura e parea com um dispositivo ja pareado anteriormente e ativo.
+- Acionar botão ("Tomou remédio"), envia registro para o app e desliga o BLE.
+- Caso  o BLE do dispostivo esteja desligado, cria um registro e tenta parear a cada 1 hora;
+	Ao parear enviar todos os registros de remédios tomados para o app
+ e zera o registro do esp.

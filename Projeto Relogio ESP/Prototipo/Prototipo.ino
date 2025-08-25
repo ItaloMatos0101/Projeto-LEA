@@ -29,14 +29,14 @@ const int scl_pin = 1;
 #define PINO_VIBRADOR 4
 #define PINO_LED 48
 #define SENSOR_PARADA 5  // Sensor de parada do alarme
-#define MAX_ALARMES 5 // <-- NOVO: Definimos que podemos ter até 5 alarmes
+#define MAX_ALARMES 5    // <-- NOVO: Definimos que podemos ter até 5 alarmes
 
 // NOVO: Criamos a "ficha" (struct) para guardar os dados de um alarme
 struct Alarme {
-  int id;             // Um identificador para cada alarme (de 0 a 4)
+  int id;  // Um identificador para cada alarme (de 0 a 4)
   int hora;
   int minuto;
-  bool ativo;         // true se o alarme estiver programado, false se o espaço estiver livre
+  bool ativo;  // true se o alarme estiver programado, false se o espaço estiver livre
 };
 
 // NOVO: Criamos nosso "fichário" (array) para a lista de alarmes
@@ -70,7 +70,7 @@ int semana;
 //int alarmeMinuto = -1;
 //bool alarmeProgramado = false;
 
-bool alarmeDisparado = false; // Controla se o alarme está *tocando* no momento
+bool alarmeDisparado = false;  // Controla se o alarme está *tocando* no momento
 unsigned long tempoInicioFase = 0;
 unsigned long ultimoToggle = 0;
 bool estadoOscilacao = false;
@@ -101,7 +101,9 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 
 // Callback para saber quando o cliente BLE conecta ou desconecta
 class MyServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer *pServer) override { Serial.println("✅ Dispositivo conectado via BLE"); }
+  void onConnect(BLEServer *pServer) override {
+    Serial.println("✅ Dispositivo conectado via BLE");
+  }
   void onDisconnect(BLEServer *pServer) override {
     Serial.println("❌ Dispositivo desconectado");
     pServer->getAdvertising()->start();
@@ -131,8 +133,8 @@ void receberHorarioBLE();
 void setup() {
   Serial.begin(115200);
 
-  inicializarAlarmes(); // <-- NOVO: Chamamos a função para limpar a lista
-  
+  inicializarAlarmes();  // <-- NOVO: Chamamos a função para limpar a lista
+
   Wire.begin(sda_pin, scl_pin);  // Inicia o I2C nos pinos 2 e 1
 
   // --- Inicializa o Display OLED (I2C0) ---
@@ -143,7 +145,7 @@ void setup() {
   }
 
   // --- Inicializa o Módulo RTC (I2C1) ---
-  if (!rtc.begin()) {               // Passa o objeto I2C_RTC para a biblioteca do relógio
+  if (!rtc.begin()) {  // Passa o objeto I2C_RTC para a biblioteca do relógio
     Serial.println("Nao foi possivel encontrar o modulo RTC!");
     display.clearDisplay();
     display.setTextSize(1);
@@ -168,7 +170,7 @@ void setup() {
 
   pinMode(PINO_VIBRADOR, OUTPUT);
   pinMode(PINO_LED, OUTPUT);
-  pinMode(SENSOR_PARADA, INPUT_PULLUP); // Usar PULLUP interno se for um botão para o GND
+  pinMode(SENSOR_PARADA, INPUT_PULLUP);  // Usar PULLUP interno se for um botão para o GND
   digitalWrite(PINO_VIBRADOR, LOW);
   digitalWrite(PINO_LED, LOW);
 
@@ -199,7 +201,7 @@ void loop() {
   //Processa comandos recebidos via Serial
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');
-    command.trim(); // Limpa espaços extras
+    command.trim();  // Limpa espaços extras
     processSerialCommand(command);
   }
 
@@ -211,11 +213,15 @@ void loop() {
 
 // ========================================================================================================
 // --- Desenvolvimento das Funções ---
-// Atualização de horários via RTC -- 
+// Atualização de horários via RTC --
 void DS3231() {
   DateTime agora = rtc.now();
-  dia = agora.day(); mes = agora.month(); ano = agora.year();
-  hora = agora.hour(); minuto = agora.minute(); segundo = agora.second();
+  dia = agora.day();
+  mes = agora.month();
+  ano = agora.year();
+  hora = agora.hour();
+  minuto = agora.minute();
+  segundo = agora.second();
   semana = agora.dayOfTheWeek();
   if (!alarmeDisparado) exibirDataHora();
   delay(1000);
@@ -229,38 +235,37 @@ void inicializarAlarmes() {
   for (int i = 0; i < MAX_ALARMES; i++) {
     listaDeAlarmes[i].id = i;
     listaDeAlarmes[i].ativo = false;
-    listaDeAlarmes[i].hora = 0;   // Opcional, bom para limpar dados antigos
-    listaDeAlarmes[i].minuto = 0; // Opcional
+    listaDeAlarmes[i].hora = 0;    // Opcional, bom para limpar dados antigos
+    listaDeAlarmes[i].minuto = 0;  // Opcional
   }
 }
 
 // Função para adicionar um alarme na lista --
 bool adicionarAlarme(int h, int m) {
-  if(alarmeDisparado) {
-      Serial.println("Relogio em modo Alarme, adicione novos alarmes após finalizar o alarme atual...");
-      return false;
-    } else {
-      for (int i = 0; i < MAX_ALARMES; i++) {
-        if (!listaDeAlarmes[i].ativo && !alarmeDisparado) { // Achou um espaço livre!
-          listaDeAlarmes[i].hora = h;
-          listaDeAlarmes[i].minuto = m;
-          listaDeAlarmes[i].ativo = true;
-          Serial.print("SUCESSO: Alarme ");
-          Serial.print(i);
-          Serial.print(" programado para ");
-          if (h < 10) Serial.print("0");
-          Serial.print(h);
-          Serial.print(":");
-          if (m < 10) Serial.print("0");
-          Serial.println(m);
-          exibirAlarmeProgramado(h, m); // Mostra no display
-          return true; // Retorna sucesso
-        }
+  if (alarmeDisparado) {
+    Serial.println("Relogio em modo Alarme, adicione novos alarmes após finalizar o alarme atual...");
+    return false;
+  } else {
+    for (int i = 0; i < MAX_ALARMES; i++) {
+      if (!listaDeAlarmes[i].ativo && !alarmeDisparado) {  // Achou um espaço livre!
+        listaDeAlarmes[i].hora = h;
+        listaDeAlarmes[i].minuto = m;
+        listaDeAlarmes[i].ativo = true;
+        Serial.print("SUCESSO: Alarme ");
+        Serial.print(i);
+        Serial.print(" programado para ");
+        if (h < 10) Serial.print("0");
+        Serial.print(h);
+        Serial.print(":");
+        if (m < 10) Serial.print("0");
+        Serial.println(m);
+        exibirAlarmeProgramado(h, m);  // Mostra no display
+        return true;                   // Retorna sucesso
       }
-  Serial.println("ERRO: Lista de alarmes cheia!");
-  return false; // Retorna falha
+    }
+    Serial.println("ERRO: Lista de alarmes cheia!");
+    return false;  // Retorna falha
   }
-
 }
 
 // Função para listar os alarmes no Serial Monitor --
@@ -287,29 +292,30 @@ void listarAlarmes() {
 }
 
 void verificarAlarme() {
-  if (alarmeDisparado) return; // Se um alarme já está tocando, não verifica por novos
+  if (alarmeDisparado) return;  // Se um alarme já está tocando, não verifica por novos
 
   // Percorre toda a lista de alarmes
   for (int i = 0; i < MAX_ALARMES; i++) {
     // Verifica se ESTE alarme da lista está ativo E se a hora bate
     if (listaDeAlarmes[i].ativo && hora == listaDeAlarmes[i].hora && minuto == listaDeAlarmes[i].minuto) {
-      
+
       // Evita disparar múltiplos alarmes ao mesmo tempo se eles coincidirem
-      if (alarmeDisparado) { 
+      if (alarmeDisparado) {
         Serial.println("Alarme ignorado, pois outro já está tocando.");
-        continue; // Pula para o próximo alarme da lista
+        continue;  // Pula para o próximo alarme da lista
       }
 
-      Serial.print("Disparando alarme ID "); Serial.println(i);
-      
-      ativarAlarme(); // Inicia o processo de vibração/LED
-      
+      Serial.print("Disparando alarme ID ");
+      Serial.println(i);
+
+      ativarAlarme();  // Inicia o processo de vibração/LED
+
       // IMPORTANTE: Desativa o alarme para que ele não dispare novamente no próximo segundo
-      listaDeAlarmes[i].ativo = false; 
-      
+      listaDeAlarmes[i].ativo = false;
+
       // Uma vez que um alarme disparou, não precisamos checar os outros neste ciclo.
       // O 'break' sai do loop 'for'.
-      break; 
+      break;
     }
   }
 }
@@ -319,7 +325,7 @@ void ativarAlarme() {
   alarmeDisparado = true;
   tempoInicioFase = millis();
   ultimoToggle = millis();
-  estadoOscilacao = false;
+  estadoOscilacao = false; 
   emPausa = false;
   contagemRepeticoes = 0;
 }
@@ -328,7 +334,7 @@ void gerenciarAlarme() {
   if (!alarmeDisparado) return;
 
   // Verifica o sensor digital
-  if (/*digitalRead(SENSOR_PARADA) == LOW || */bleEntrada == "parar") {
+  if (/*digitalRead(SENSOR_PARADA) == LOW || */ bleEntrada == "parar") {
     pararAlarme();
     return;
   }
@@ -385,30 +391,31 @@ void pararAlarme() {
 // --- Comunicação ---
 // Função para processar os comandos
 void processSerialCommand(String cmd) {
-  Serial.print("\n-> Comando recebido: "); Serial.println(cmd);
+  Serial.print("\n-> Comando recebido: ");
+  Serial.println(cmd);
 
   if (cmd.startsWith("set ")) {
     setTime(cmd);
   } else if (cmd.startsWith("add ")) {
-    String horarioStr = cmd.substring(4); // Pega a parte "HH:MM"
+    String horarioStr = cmd.substring(4);  // Pega a parte "HH:MM"
     if (horarioStr.length() == 5 && horarioStr.charAt(2) == ':') {
       int h = horarioStr.substring(0, 2).toInt();
       int m = horarioStr.substring(3, 5).toInt();
       if (h >= 0 && h < 24 && m >= 0 && m < 60) {
         adicionarAlarme(h, m);
       } else {
-          Serial.println("ERRO: Horário inválido.");
+        Serial.println("ERRO: Horário inválido.");
       }
     } else {
-        Serial.println("ERRO: Formato inválido. Use: add HH:MM");
+      Serial.println("ERRO: Formato inválido. Use: add HH:MM");
     }
   } else if (cmd == "list") {
-      listarAlarmes();
+    listarAlarmes();
   } else if (cmd == "clear") {
-      inicializarAlarmes(); // Reutilizamos a função para limpar tudo
-      Serial.println("SUCESSO: Todos os alarmes foram removidos.");
-  } else if (cmd == "parar"){
-      pararAlarme();
+    inicializarAlarmes();  // Reutilizamos a função para limpar tudo
+    Serial.println("SUCESSO: Todos os alarmes foram removidos.");
+  } else if (cmd == "parar") {
+    pararAlarme();
   } else {
     Serial.println("ERRO: Comando desconhecido. Use 'set', 'add', 'list', ou 'clear'.");
   }
@@ -418,21 +425,21 @@ void processSerialCommand(String cmd) {
 void receberHorarioBLE() {
   if (bleNovoHorario) {
     bleNovoHorario = false;
-    
+
     // Adapta o processamento BLE para os novos comandos
     if (bleEntrada.startsWith("add ")) {
       String horarioStr = bleEntrada.substring(4);
-      if (horarioStr.length() == 5 && horarioStr.charAt(2) == ':'){
-        int h = bleEntrada.substring(0, 2).toInt();
-        int m = bleEntrada.substring(3, 5).toInt();
+      if (horarioStr.length() == 5 && horarioStr.charAt(2) == ':') {
+        int h = horarioStr.substring(0, 2).toInt();
+        int m = horarioStr.substring(3, 5).toInt();
         if (h >= 0 && h < 24 && m >= 0 && m < 60) {
           adicionarAlarme(h, m);
         } else {
           Serial.println("ERRO BLE: Horário com valores inválidos.");
         }
       } else {
-          Serial.println("ERRO BLE: Formato inválido. Use: add HH:MM");
-        }
+        Serial.println("ERRO BLE: Formato inválido. Use: add HH:MM");
+      }
     } else if (bleEntrada == "list") {
       listarAlarmes();
     } else if (bleEntrada == "clear") {
@@ -443,20 +450,20 @@ void receberHorarioBLE() {
 }
 
 //Função para setar horário por Serial
-void setTime(String cmd){
+void setTime(String cmd) {
   int year, month, day, hour, minute, second;
-    String datetimeStr = cmd.substring(4);
-    int parsed_items = sscanf(datetimeStr.c_str(), "%d-%d-%d %d:%d:%d",
-                              &year, &month, &day, &hour, &minute, &second);
+  String datetimeStr = cmd.substring(4);
+  int parsed_items = sscanf(datetimeStr.c_str(), "%d-%d-%d %d:%d:%d",
+                            &year, &month, &day, &hour, &minute, &second);
 
-    if (parsed_items == 6) {
-      DateTime newTime = DateTime(year, month, day, hour, minute, second);
-      rtc.adjust(newTime);
-      Serial.println("SUCESSO: RTC ajustado com a nova data e hora!");
-      // Após o ajuste, o dia da semana será calculado automaticamente.
-    } else {
-      Serial.println("ERRO: Formato invalido! Use: set AAAA-MM-DD HH:MM:SS");
-    }
+  if (parsed_items == 6) {
+    DateTime newTime = DateTime(year, month, day, hour, minute, second);
+    rtc.adjust(newTime);
+    Serial.println("SUCESSO: RTC ajustado com a nova data e hora!");
+    // Após o ajuste, o dia da semana será calculado automaticamente.
+  } else {
+    Serial.println("ERRO: Formato invalido! Use: set AAAA-MM-DD HH:MM:SS");
+  }
 }
 
 // ========================================================================================================
@@ -473,14 +480,16 @@ void exibirDataHora() {
   Serial.print(" | ");
   display.setCursor((SCREEN_WIDTH - (strlen(dataStr) * 6)) / 2, 5);
   display.print(dataStr);
-  
+
 
   char horaStr[6];
   display.setTextSize(3);
   // Centraliza a hora
   sprintf(horaStr, "%02d:%02d", hora, minuto);
   Serial.print(horaStr);
-  Serial.print(":"); Serial.print(segundo);
+  Serial.print(":");
+  if(segundo<10) Serial.print("0");
+  Serial.print(segundo);
   Serial.print(" | ");
   Serial.println(diasDaSemana[semana]);
   display.setCursor((SCREEN_WIDTH - (5 * 18)) / 2 + 5, 30);
